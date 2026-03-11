@@ -132,6 +132,10 @@ def process_battle(room_id):
     p1 = room['players'][p1_sid]
     p2 = room['players'][p2_sid]
 
+    # Store initial state for UI animation
+    p1_initial = {'hp': p1['hp'], 'cost': p1['cost'], 'hands': p1['hands']}
+    p2_initial = {'hp': p2['hp'], 'cost': p2['cost'], 'hands': p2['hands']}
+
     h1_name = p1['selected_hand']
     h2_name = p2['selected_hand']
     h1 = p1['hands'][h1_name]
@@ -151,7 +155,6 @@ def process_battle(room_id):
     p2['cost'] = max(0, p2['cost'] - p2_cost_needed)
 
     # 2. RPS Outcome
-    # rock > scissors, scissors > paper, paper > rock
     win_map = {'rock': 'scissors', 'scissors': 'paper', 'paper': 'rock'}
 
     p1_calc_dmg = 0
@@ -163,8 +166,8 @@ def process_battle(room_id):
 
     if h1_name == h2_name:
         result = "draw"
-        p1_win_dmg = 1
-        p2_win_dmg = 1
+        p1_win_dmg = 0
+        p2_win_dmg = 0
     elif win_map[h1_name] == h2_name:
         result = "p1_win"
         p1_calc_dmg = max(0, h1['atk'] - h2['def'])
@@ -186,8 +189,8 @@ def process_battle(room_id):
             'sid': p1_sid,
             'hand': h1_name,
             'cost_dmg': p1_cost_dmg,
-            'calc_dmg': p2_calc_dmg, # Damage received from opponent's ATK
-            'win_dmg': p2_win_dmg,   # Damage received from opponent's win
+            'calc_dmg': p2_calc_dmg,
+            'win_dmg': p2_win_dmg,
             'hp_after': p1['hp'],
             'cost_after': p1['cost']
         },
@@ -202,16 +205,8 @@ def process_battle(room_id):
         },
         'result': result,
         'players': {
-            p1_sid: {
-                'hp': p1['hp'] + p2_calc_dmg + p2_win_dmg + p1_cost_dmg, # HP before this turn
-                'cost': p1['cost'] + p1_cost_needed - 5,                # Cost before this turn
-                'hands': p1['hands']
-            },
-            p2_sid: {
-                'hp': p2['hp'] + p1_calc_dmg + p1_win_dmg + p2_cost_dmg,
-                'cost': p2['cost'] + p2_cost_needed - 5,
-                'hands': p2['hands']
-            }
+            p1_sid: p1_initial,
+            p2_sid: p2_initial
         }
     }
 
@@ -234,7 +229,7 @@ def process_battle(room_id):
 
         # We will trigger start_selection from the client after animation or use a timer here
         # For robustness, let's use a client-side trigger or a delayed emit
-        socketio.sleep(25) # Give time for long animations (roulette 6s + board + attack + fling)
+        socketio.sleep(35) # Long animations: roulette 6s + cost 5s + win 5s + dmg 5s + stamps
         if room_id in rooms and rooms[room_id]['state'] == 'SELECTING':
             players_info = {}
             for sid, p in rooms[room_id]['players'].items():

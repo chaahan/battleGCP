@@ -261,10 +261,51 @@ input {
 }
 
 .battle-hand-stats {
-    font-size: 14px;
+    font-size: 18px;
+    font-weight: bold;
     margin-top: 5px;
-    background: rgba(0,0,0,0.5);
-    padding: 2px 5px;
+    background: rgba(0,0,0,0.8);
+    padding: 5px 10px;
+    border: 1px solid #ffeb3b;
+    border-radius: 5px;
+    z-index: 30;
+}
+
+.constant-hand-stats {
+    font-size: 12px;
+    margin-top: 5px;
+    background: rgba(0,0,0,0.6);
+    padding: 5px;
+    border-radius: 5px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.mini-stat {
+    white-space: nowrap;
+}
+
+.stamp {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(5);
+    font-size: 120px;
+    font-weight: 900;
+    opacity: 0;
+    z-index: 300;
+    pointer-events: none;
+    text-shadow: 5px 5px 0 #000;
+}
+.stamp.win { color: #4CAF50; content: "WIN"; }
+.stamp.lose { color: #f44336; content: "LOSE"; }
+
+.animate-stamp {
+    animation: stamp-slam 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
+}
+@keyframes stamp-slam {
+    0% { transform: translate(-50%, -50%) scale(5); opacity: 0; }
+    100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
 }
 
 #battle-phase-text {
@@ -299,17 +340,27 @@ input {
 
 @keyframes damage-fling-p1 {
     0% { transform: scale(1) translate(0, 0); opacity: 1; }
-    50% { transform: scale(2) translate(0, -50px); opacity: 1; }
-    100% { transform: scale(0.5) translate(-400px, -250px); opacity: 0; }
+    30% { transform: scale(3) translate(0, -100px); opacity: 1; }
+    100% { transform: scale(0.5) translate(-450px, -450px); opacity: 0; }
 }
 @keyframes damage-fling-p2 {
     0% { transform: scale(1) translate(0, 0); opacity: 1; }
-    50% { transform: scale(2) translate(0, -50px); opacity: 1; }
-    100% { transform: scale(0.5) translate(400px, -250px); opacity: 0; }
+    30% { transform: scale(3) translate(0, -100px); opacity: 1; }
+    100% { transform: scale(0.5) translate(450px, -450px); opacity: 0; }
 }
 
-.animate-damage-p1 { animation: damage-fling-p1 1s forwards; }
-.animate-damage-p2 { animation: damage-fling-p2 1s forwards; }
+.shake {
+    animation: screen-shake 0.5s;
+}
+@keyframes screen-shake {
+    0% { transform: translate(0, 0); }
+    10%, 30%, 50%, 70%, 90% { transform: translate(-10px, 0); }
+    20%, 40%, 60%, 80% { transform: translate(10px, 0); }
+    100% { transform: translate(0, 0); }
+}
+
+.animate-damage-p1 { animation: damage-fling-p1 1.5s cubic-bezier(0.55, 0.055, 0.675, 0.19) forwards; }
+.animate-damage-p2 { animation: damage-fling-p2 1.5s cubic-bezier(0.55, 0.055, 0.675, 0.19) forwards; }
 
 .animate-attack { animation: attack-bump 0.5s; }
 @keyframes attack-bump {
