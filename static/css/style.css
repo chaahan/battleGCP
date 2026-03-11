@@ -1,0 +1,211 @@
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: #222;
+    color: #fff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+}
+
+#game-container {
+    width: 800px;
+    height: 600px;
+    background-color: #333;
+    border: 4px solid #555;
+    position: relative;
+    overflow: hidden;
+}
+
+.screen {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+
+.hidden {
+    display: none !important;
+}
+
+button {
+    padding: 10px 20px;
+    margin: 10px;
+    font-size: 18px;
+    cursor: pointer;
+    background-color: #4CAF50;
+    border: none;
+    color: white;
+    border-radius: 5px;
+}
+
+button:hover {
+    background-color: #45a049;
+}
+
+input {
+    padding: 10px;
+    margin: 10px;
+    font-size: 16px;
+}
+
+.big-text {
+    font-size: 48px;
+    font-weight: bold;
+    margin: 20px;
+}
+
+/* Prep Screen */
+.prep-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    width: 300px;
+}
+.hand-config {
+    background: #444;
+    padding: 15px;
+    border-radius: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.hand-name {
+    font-size: 24px;
+    font-weight: bold;
+    flex: 1;
+    text-align: left;
+}
+.hand-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    flex: 2;
+    align-items: flex-end;
+}
+.stat-row {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    width: 100%;
+}
+.hand-stats input {
+    width: 60px;
+    margin: 0;
+}
+
+/* Selection Screen */
+.battle-layout {
+    display: flex;
+    justify-content: space-between;
+    width: 90%;
+}
+.player-info {
+    width: 30%;
+}
+.hp-bar-container {
+    width: 100%;
+    height: 20px;
+    background: #555;
+    border: 1px solid #777;
+    margin: 5px 0;
+}
+.hp-bar {
+    width: 100%;
+    height: 100%;
+    background: #f44336;
+    transition: width 0.5s;
+}
+.timer-container {
+    width: 20%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 48px;
+}
+.hand-list button {
+    display: block;
+    width: 100%;
+    margin: 5px 0;
+}
+
+/* Battle Screen */
+.arena {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    width: 100%;
+    height: 300px;
+}
+.character {
+    width: 100px;
+    height: 180px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.char-body {
+    width: 60px;
+    height: 120px;
+    background: #ccc;
+    margin: 0 auto;
+    border-radius: 10px;
+}
+.chosen-hand-display {
+    font-size: 40px;
+    margin-top: 10px;
+}
+
+/* Animations */
+@keyframes attack-rock-self {
+    0% { transform: translateX(0) scale(1); }
+    50% { transform: translateX(200px) scale(1.5); }
+    100% { transform: translateX(0) scale(1); }
+}
+@keyframes attack-scissors-self {
+    0% { transform: translateX(0) rotate(0); }
+    50% { transform: translateX(200px) rotate(45deg); }
+    100% { transform: translateX(0) rotate(0); }
+}
+@keyframes attack-paper-self {
+    0% { transform: translateX(0); opacity: 1; }
+    50% { transform: translateX(200px); opacity: 0.7; }
+    100% { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes attack-rock-opp {
+    0% { transform: translateX(0) scale(1); }
+    50% { transform: translateX(-200px) scale(1.5); }
+    100% { transform: translateX(0) scale(1); }
+}
+@keyframes attack-scissors-opp {
+    0% { transform: translateX(0) rotate(0); }
+    50% { transform: translateX(-200px) rotate(-45deg); }
+    100% { transform: translateX(0) rotate(0); }
+}
+@keyframes attack-paper-opp {
+    0% { transform: translateX(0); opacity: 1; }
+    50% { transform: translateX(-200px); opacity: 0.7; }
+    100% { transform: translateX(0); opacity: 1; }
+}
+
+.attack-rock-self { animation: attack-rock-self 0.5s; }
+.attack-scissors-self { animation: attack-scissors-self 0.5s; }
+.attack-paper-self { animation: attack-paper-self 0.5s; }
+
+.attack-rock-opp { animation: attack-rock-opp 0.5s; }
+.attack-scissors-opp { animation: attack-scissors-opp 0.5s; }
+.attack-paper-opp { animation: attack-paper-opp 0.5s; }
+
+#battle-log {
+    margin-top: 20px;
+    height: 100px;
+    overflow-y: auto;
+    font-size: 18px;
+}
