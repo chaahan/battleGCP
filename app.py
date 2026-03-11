@@ -235,4 +235,6 @@ def process_battle(room_id):
             emit('start_selection', {'players': players_info}, room=room_id)
 
 if __name__ == '__main__':
-    socketio.run(app, debug=True, port=5000)
+    import os
+    port = int(os.environ.get('PORT', 5000))
+    socketio.run(app, host='0.0.0.0', port=port)
