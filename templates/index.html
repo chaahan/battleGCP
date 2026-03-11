@@ -48,20 +48,26 @@
         <div id="prep-screen" class="screen hidden">
             <h2>準備画面</h2>
             <div class="prep-controls">
-                <div class="hand-config" id="config-rock">
-                    <h3>グー</h3>
-                    攻撃: <input type="number" class="atk" value="0" min="0" max="10">
-                    防御: <input type="number" class="def" value="0" min="0" max="5">
+                <div class="hand-config" id="config-rock" data-hand="rock">
+                    <div class="hand-icon">✊</div>
+                    <div class="hand-stats-container">
+                        <div class="stat-label-row">攻撃 <div class="stat-squares atk-squares" data-max="10"></div></div>
+                        <div class="stat-label-row">防御 <div class="stat-squares def-squares" data-max="5"></div></div>
+                    </div>
                 </div>
-                <div class="hand-config" id="config-scissors">
-                    <h3>チョキ</h3>
-                    攻撃: <input type="number" class="atk" value="0" min="0" max="10">
-                    防御: <input type="number" class="def" value="0" min="0" max="5">
+                <div class="hand-config" id="config-scissors" data-hand="scissors">
+                    <div class="hand-icon">✌️</div>
+                    <div class="hand-stats-container">
+                        <div class="stat-label-row">攻撃 <div class="stat-squares atk-squares" data-max="10"></div></div>
+                        <div class="stat-label-row">防御 <div class="stat-squares def-squares" data-max="5"></div></div>
+                    </div>
                 </div>
-                <div class="hand-config" id="config-paper">
-                    <h3>パー</h3>
-                    攻撃: <input type="number" class="atk" value="0" min="0" max="10">
-                    防御: <input type="number" class="def" value="0" min="0" max="5">
+                <div class="hand-config" id="config-paper" data-hand="paper">
+                    <div class="hand-icon">✋</div>
+                    <div class="hand-stats-container">
+                        <div class="stat-label-row">攻撃 <div class="stat-squares atk-squares" data-max="10"></div></div>
+                        <div class="stat-label-row">防御 <div class="stat-squares def-squares" data-max="5"></div></div>
+                    </div>
                 </div>
             </div>
             <p>コストは攻撃＋防御の合計です。</p>
@@ -90,10 +96,10 @@
                     <div class="hp-bar-container"><div class="hp-bar"></div></div>
                     <div class="hp-text">HP: 10/10</div>
                     <div class="cost-text">残りコスト: 10</div>
-                    <div class="opponent-hand-placeholder">
-                        <div>グー</div>
-                        <div>チョキ</div>
-                        <div>パー</div>
+                    <div class="opponent-hand-stats">
+                        <div id="opp-stat-rock">✊ ATK:? DEF:?</div>
+                        <div id="opp-stat-scissors">✌️ ATK:? DEF:?</div>
+                        <div id="opp-stat-paper">✋ ATK:? DEF:?</div>
                     </div>
                 </div>
             </div>
@@ -101,18 +107,29 @@
 
         <!-- BATTLE SCREEN -->
         <div id="battle-screen" class="screen hidden">
+            <div id="battle-stats-overlay">
+                <div id="battle-self-stats">HP:? COST:?</div>
+                <div id="battle-opp-stats">HP:? COST:?</div>
+            </div>
             <div class="arena">
                 <div id="char-self" class="character">
                     <div class="username">自分</div>
                     <div class="char-body"></div>
-                    <div class="chosen-hand-display"></div>
+                    <div class="roulette-container" id="roulette-self">
+                        <div class="roulette-reel">✊✌️✋</div>
+                    </div>
+                    <div class="battle-hand-stats" id="battle-hand-self"></div>
                 </div>
                 <div id="char-opponent" class="character">
                     <div class="username">相手</div>
                     <div class="char-body"></div>
-                    <div class="chosen-hand-display"></div>
+                    <div class="roulette-container" id="roulette-opp">
+                        <div class="roulette-reel">✊✌️✋</div>
+                    </div>
+                    <div class="battle-hand-stats" id="battle-hand-opp"></div>
                 </div>
             </div>
+            <div id="battle-phase-text"></div>
             <div id="battle-log"></div>
         </div>
 

@@ -200,7 +200,19 @@ def process_battle(room_id):
             'hp_after': p2['hp'],
             'cost_after': p2['cost']
         },
-        'result': result
+        'result': result,
+        'players': {
+            p1_sid: {
+                'hp': p1['hp'] + p2_calc_dmg + p2_win_dmg + p1_cost_dmg, # HP before this turn
+                'cost': p1['cost'] + p1_cost_needed - 5,                # Cost before this turn
+                'hands': p1['hands']
+            },
+            p2_sid: {
+                'hp': p2['hp'] + p1_calc_dmg + p1_win_dmg + p2_cost_dmg,
+                'cost': p2['cost'] + p2_cost_needed - 5,
+                'hands': p2['hands']
+            }
+        }
     }
 
     emit('battle_result', battle_data, room=room_id)
@@ -222,7 +234,7 @@ def process_battle(room_id):
 
         # We will trigger start_selection from the client after animation or use a timer here
         # For robustness, let's use a client-side trigger or a delayed emit
-        socketio.sleep(5) # Give time for animations
+        socketio.sleep(15) # Give time for animations (roulette 6s + steps ~8s)
         if room_id in rooms and rooms[room_id]['state'] == 'SELECTING':
             players_info = {}
             for sid, p in rooms[room_id]['players'].items():
@@ -237,4 +249,4 @@ def process_battle(room_id):
 if __name__ == '__main__':
     import os
     port = int(os.environ.get('PORT', 5000))
-    socketio.run(app, host='0.0.0.0', port=port)
+    socketio.run(app, host='0.0.0.0', port=port, debug=False)
