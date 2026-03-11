@@ -10,12 +10,13 @@ body {
 }
 
 #game-container {
-    width: 800px;
-    height: 600px;
+    width: 1100px;
+    height: 700px;
     background-color: #333;
     border: 4px solid #555;
     position: relative;
     overflow: hidden;
+    box-shadow: 0 0 50px rgba(0,0,0,0.8);
 }
 
 .screen {
@@ -153,42 +154,105 @@ input {
     justify-content: space-between;
     width: 100%;
     padding: 20px;
-    font-size: 20px;
 }
+.battle-stat-box {
+    background: rgba(0,0,0,0.7);
+    padding: 10px 20px;
+    border: 2px solid #555;
+    border-radius: 10px;
+    font-size: 24px;
+    font-weight: bold;
+    color: #4CAF50;
+    min-width: 250px;
+}
+#battle-result-board {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0,0,0,0.85);
+    border: 3px solid #f44336;
+    border-radius: 15px;
+    padding: 20px;
+    z-index: 100;
+    width: 450px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
+}
+.board-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #444;
+    padding: 5px 0;
+}
+.board-label {
+    font-size: 14px;
+    color: #aaa;
+    text-align: center;
+    flex: 1;
+}
+.damage-val {
+    font-size: 24px;
+    font-weight: bold;
+    width: 80px;
+    text-align: center;
+}
+.winloss-text {
+    font-size: 28px;
+    font-weight: bold;
+    width: 120px;
+    text-align: center;
+}
+.win-color { color: #4CAF50; }
+.lose-color { color: #f44336; }
+.draw-color { color: #ffeb3b; }
+
 .arena {
     display: flex;
-    justify-content: space-around;
+    justify-content: space-between;
     align-items: center;
-    width: 100%;
-    height: 350px;
+    width: 90%;
+    height: 400px;
 }
 .character {
-    width: 150px;
-    height: 250px;
+    width: 250px;
+    height: 350px;
     position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
 }
+.char-avatar {
+    font-size: 80px;
+    margin-bottom: -20px;
+    z-index: 10;
+}
 .char-body {
-    width: 80px;
-    height: 140px;
-    background: #ccc;
+    width: 100px;
+    height: 160px;
+    background: linear-gradient(to bottom, #777, #444);
     margin: 0 auto;
-    border-radius: 10px;
+    border-radius: 20px 20px 5px 5px;
+    border: 2px solid #999;
 }
 .roulette-container {
-    width: 60px;
-    height: 60px;
+    width: 80px;
+    height: 80px;
     overflow: hidden;
     background: #fff;
-    border: 2px solid #000;
-    margin-top: 10px;
+    border: 4px solid #333;
+    box-shadow: 0 0 10px rgba(0,0,0,0.5);
+    margin-top: -40px;
     position: relative;
+    z-index: 20;
+    border-radius: 10px;
 }
 .roulette-reel {
-    font-size: 40px;
-    line-height: 60px;
+    font-size: 60px;
+    line-height: 80px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -209,6 +273,78 @@ input {
     color: #ffeb3b;
     margin: 10px 0;
     height: 30px;
+}
+
+/* Special Effects */
+#effect-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 50;
+}
+
+.total-damage-popup {
+    position: absolute;
+    font-size: 60px;
+    font-weight: bold;
+    color: #ff5722;
+    text-shadow: 2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000;
+    opacity: 0;
+    z-index: 200;
+    pointer-events: none;
+}
+
+@keyframes damage-fling-p1 {
+    0% { transform: scale(1) translate(0, 0); opacity: 1; }
+    50% { transform: scale(2) translate(0, -50px); opacity: 1; }
+    100% { transform: scale(0.5) translate(-400px, -250px); opacity: 0; }
+}
+@keyframes damage-fling-p2 {
+    0% { transform: scale(1) translate(0, 0); opacity: 1; }
+    50% { transform: scale(2) translate(0, -50px); opacity: 1; }
+    100% { transform: scale(0.5) translate(400px, -250px); opacity: 0; }
+}
+
+.animate-damage-p1 { animation: damage-fling-p1 1s forwards; }
+.animate-damage-p2 { animation: damage-fling-p2 1s forwards; }
+
+.animate-attack { animation: attack-bump 0.5s; }
+@keyframes attack-bump {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+}
+
+/* Attack Visuals */
+.slash-effect {
+    position: absolute;
+    width: 200px;
+    height: 20px;
+    background: white;
+    box-shadow: 0 0 20px cyan;
+    transform: rotate(-45deg);
+    animation: slash-anim 0.3s forwards;
+}
+@keyframes slash-anim {
+    0% { opacity: 0; transform: scaleX(0) rotate(-45deg); }
+    50% { opacity: 1; transform: scaleX(1) rotate(-45deg); }
+    100% { opacity: 0; transform: scaleX(1.5) rotate(-45deg); }
+}
+
+.magic-burst {
+    position: absolute;
+    width: 100px;
+    height: 100px;
+    background: radial-gradient(circle, #e91e63, transparent);
+    border-radius: 50%;
+    animation: burst-anim 0.5s forwards;
+}
+@keyframes burst-anim {
+    0% { transform: scale(0); opacity: 1; }
+    100% { transform: scale(3); opacity: 0; }
 }
 
 /* Animations */

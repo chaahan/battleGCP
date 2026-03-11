@@ -234,7 +234,7 @@ def process_battle(room_id):
 
         # We will trigger start_selection from the client after animation or use a timer here
         # For robustness, let's use a client-side trigger or a delayed emit
-        socketio.sleep(15) # Give time for animations (roulette 6s + steps ~8s)
+        socketio.sleep(25) # Give time for long animations (roulette 6s + board + attack + fling)
         if room_id in rooms and rooms[room_id]['state'] == 'SELECTING':
             players_info = {}
             for sid, p in rooms[room_id]['players'].items():

@@ -3,6 +3,9 @@ let mySid = null;
 let currentRoom = null;
 let myHands = {};
 let timerInterval = null;
+const avatars = ['🧙', '🧝', '🧛', '🧟', '🤖', '👾', '🐲', '👹', '👺', '🤡', '🤠', '🥷'];
+let myAvatar = '👤';
+let oppAvatar = '👤';
 
 function showScreen(screenId) {
     document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
@@ -36,6 +39,12 @@ socket.on('room_joined', (data) => {
 socket.on('game_start', (data) => {
     showScreen('prep-screen');
     initPrepScreen();
+    myAvatar = avatars[Math.floor(Math.random() * avatars.length)];
+    // Opponent avatar will be determined during selection/battle phase or randomized here for simplicity
+    oppAvatar = avatars[Math.floor(Math.random() * avatars.length)];
+    while (oppAvatar === myAvatar) {
+        oppAvatar = avatars[Math.floor(Math.random() * avatars.length)];
+    }
 });
 
 function initPrepScreen() {
@@ -152,13 +161,17 @@ socket.on('battle_result', async (data) => {
     const handIcons = { rock: '✊', scissors: '✌️', paper: '✋' };
     const log = document.getElementById('battle-log');
     const phaseText = document.getElementById('battle-phase-text');
+    const board = document.getElementById('battle-result-board');
     log.innerHTML = "";
+    board.classList.add('hidden');
 
     // Reset Battle Screen
     document.getElementById('battle-self-stats').innerText = `${myData.username || "自分"} HP:${myData.hp} COST:${myData.cost}`;
     document.getElementById('battle-opp-stats').innerText = `${oppData.username || "相手"} HP:${oppData.hp} COST:${oppData.cost}`;
     document.getElementById('battle-hand-self').innerText = "";
     document.getElementById('battle-hand-opp').innerText = "";
+    document.getElementById('avatar-self').innerText = myAvatar;
+    document.getElementById('avatar-opponent').innerText = oppAvatar;
 
     // 1. Roulette Animation (6 seconds)
     phaseText.innerText = "RPSルーレット！";
@@ -191,49 +204,95 @@ socket.on('battle_result', async (data) => {
     document.getElementById('battle-hand-opp').innerText = `ATK:${oppHandStats.atk} DEF:${oppHandStats.def}`;
     await new Promise(r => setTimeout(r, 1000));
 
-    // 3. Cost Reveal & Calculation
-    phaseText.innerText = "コスト計算...";
-    log.innerHTML += `消費コスト: 自分${myHandStats.atk+myHandStats.def} 相手${oppHandStats.atk+oppHandStats.def}<br>`;
-    await new Promise(r => setTimeout(r, 1000));
+    // 3. Result Board Show
+    board.classList.remove('hidden');
+    const setBoardVal = (id, val, colorClass = "") => {
+        const el = document.getElementById(id);
+        el.innerText = val;
+        el.className = 'damage-val ' + colorClass;
+    };
 
+    let p1WinText = "DRAW", p2WinText = "DRAW";
+    let p1Color = "draw-color", p2Color = "draw-color";
+    if (data.result === 'p1_win') {
+        p1WinText = "WIN!"; p2WinText = "LOSE...";
+        p1Color = "win-color"; p2Color = "lose-color";
+    } else if (data.result === 'p2_win') {
+        p1WinText = "LOSE..."; p2WinText = "WIN!";
+        p1Color = "lose-color"; p2Color = "win-color";
+    }
+
+    document.getElementById('board-p1-winloss').innerText = p1WinText;
+    document.getElementById('board-p1-winloss').className = 'winloss-text ' + p1Color;
+    document.getElementById('board-p2-winloss').innerText = p2WinText;
+    document.getElementById('board-p2-winloss').className = 'winloss-text ' + p2Color;
+
+    setBoardVal('board-p1-cost', data.p1.cost_dmg);
+    setBoardVal('board-p2-cost', data.p2.cost_dmg);
+    setBoardVal('board-p1-calc', data.p2.calc_dmg); // Damage received
+    setBoardVal('board-p2-calc', data.p1.calc_dmg);
+    setBoardVal('board-p1-win', data.p2.win_dmg);
+    setBoardVal('board-p2-win', data.p1.win_dmg);
+
+    // 4. Staged Calculation
+    phaseText.innerText = "コスト計算...";
+    await new Promise(r => setTimeout(r, 1000));
     if (myBattle.cost_dmg > 0 || oppBattle.cost_dmg > 0) {
-        phaseText.innerText = "コスト不足！ダメージ発生！";
-        log.innerHTML += `コストダメージ: 自分${myBattle.cost_dmg} 相手${oppBattle.cost_dmg}<br>`;
         document.getElementById('battle-self-stats').innerText = `${myData.username || "自分"} HP:${myData.hp - myBattle.cost_dmg} COST:0`;
         document.getElementById('battle-opp-stats').innerText = `${oppData.username || "相手"} HP:${oppData.hp - oppBattle.cost_dmg} COST:0`;
-        await new Promise(r => setTimeout(r, 1500));
+        await new Promise(r => setTimeout(r, 1000));
     }
 
-    // 4. Winner Reveal & Attack Animation
-    phaseText.innerText = "勝敗判定！";
-    await new Promise(r => setTimeout(r, 1000));
+    phaseText.innerText = "攻撃開始！";
+    const runAttackAnim = async (attackerId, effectType) => {
+        const attacker = document.getElementById(attackerId);
+        const layer = document.getElementById('effect-layer');
+        attacker.classList.add('animate-attack'); // generic bump
 
-    if (data.result === 'draw') {
-        phaseText.innerText = "引き分け！";
-        log.innerHTML += "引き分け！<br>";
-    } else if ((data.result === 'p1_win' && data.p1.sid === mySid) || (data.result === 'p2_win' && data.p2.sid === mySid)) {
-        phaseText.innerText = "あなたの勝利！";
-        document.getElementById('char-self').classList.add(`attack-${myBattle.hand}-self`);
-        await new Promise(r => setTimeout(r, 600));
-        document.getElementById('char-self').classList.remove(`attack-${myBattle.hand}-self`);
-    } else {
-        phaseText.innerText = "相手の勝利！";
-        document.getElementById('char-opponent').classList.add(`attack-${oppBattle.hand}-opp`);
-        await new Promise(r => setTimeout(r, 600));
-        document.getElementById('char-opponent').classList.remove(`attack-${oppBattle.hand}-opp`);
+        const effect = document.createElement('div');
+        effect.className = effectType;
+        effect.style.left = attackerId === 'char-self' ? '70%' : '20%';
+        effect.style.top = '40%';
+        layer.appendChild(effect);
+
+        await new Promise(r => setTimeout(r, 500));
+        attacker.classList.remove('animate-attack');
+        effect.remove();
+    };
+
+    const effects = ['slash-effect', 'magic-burst'];
+    if (data.result === 'p1_win') {
+        await runAttackAnim('char-self', effects[Math.floor(Math.random()*effects.length)]);
+    } else if (data.result === 'p2_win') {
+        await runAttackAnim('char-opponent', effects[Math.floor(Math.random()*effects.length)]);
     }
 
-    // 5. Damage Calculation
-    phaseText.innerText = "ダメージ計算...";
-    await new Promise(r => setTimeout(r, 1000));
-    log.innerHTML += `計算ダメージ: 自分${myBattle.calc_dmg} 相手${oppBattle.calc_dmg}<br>`;
-    log.innerHTML += `勝敗ダメージ: 自分${myBattle.win_dmg} 相手${oppBattle.win_dmg}<br>`;
+    // 5. Damage Fling
+    phaseText.innerText = "ダメージ精算！";
+    const myTotalDmg = myBattle.cost_dmg + myBattle.calc_dmg + myBattle.win_dmg;
+    const oppTotalDmg = oppBattle.cost_dmg + oppBattle.calc_dmg + oppBattle.win_dmg;
 
-    // 6. HP Update
-    phaseText.innerText = "HP減少！";
+    const flingDmg = async (id, val, pClass) => {
+        const el = document.getElementById(id);
+        el.innerText = "-" + val;
+        el.style.opacity = 1;
+        el.className = 'total-damage-popup ' + pClass;
+        await new Promise(r => setTimeout(r, 1000));
+        el.style.opacity = 0;
+    };
+
+    await Promise.all([
+        flingDmg('total-dmg-p1', myTotalDmg, 'animate-damage-p1'),
+        flingDmg('total-dmg-p2', oppTotalDmg, 'animate-damage-p2')
+    ]);
+
+    // 6. Final HP Update
+    phaseText.innerText = "HP更新！";
     document.getElementById('battle-self-stats').innerText = `${myData.username || "自分"} HP:${myBattle.hp_after} COST:${myBattle.cost_after}`;
     document.getElementById('battle-opp-stats').innerText = `${oppData.username || "相手"} HP:${oppBattle.hp_after} COST:${oppBattle.cost_after}`;
+
     await new Promise(r => setTimeout(r, 2000));
+    board.classList.add('hidden');
     phaseText.innerText = "";
 });
 
