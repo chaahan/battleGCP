@@ -137,21 +137,33 @@
 
             <div class="arena">
                 <div id="char-self" class="character">
+                    <div id="stamp-self" class="stamp"></div>
                     <div class="username">自分</div>
                     <div class="char-avatar" id="avatar-self"></div>
                     <div class="char-body"></div>
                     <div class="roulette-container" id="roulette-self">
                         <div class="roulette-reel">✊✌️✋</div>
                     </div>
+                    <div class="constant-hand-stats" id="const-stats-self">
+                        <div class="mini-stat">✊ A:? D:?</div>
+                        <div class="mini-stat">✌️ A:? D:?</div>
+                        <div class="mini-stat">✋ A:? D:?</div>
+                    </div>
                     <div class="battle-hand-stats" id="battle-hand-self"></div>
                     <div id="total-dmg-p1" class="total-damage-popup"></div>
                 </div>
                 <div id="char-opponent" class="character">
+                    <div id="stamp-opponent" class="stamp"></div>
                     <div class="username">相手</div>
                     <div class="char-avatar" id="avatar-opponent"></div>
                     <div class="char-body"></div>
                     <div class="roulette-container" id="roulette-opp">
                         <div class="roulette-reel">✊✌️✋</div>
+                    </div>
+                    <div class="constant-hand-stats" id="const-stats-opp">
+                        <div class="mini-stat">✊ A:? D:?</div>
+                        <div class="mini-stat">✌️ A:? D:?</div>
+                        <div class="mini-stat">✋ A:? D:?</div>
                     </div>
                     <div class="battle-hand-stats" id="battle-hand-opp"></div>
                     <div id="total-dmg-p2" class="total-damage-popup"></div>
@@ -167,7 +179,7 @@
 
         <!-- GAME OVER SCREEN -->
         <div id="game-over-screen" class="screen hidden">
-            <h2 id="winner-text"></h2>
+            <h2 id="winner-text" class="big-text"></h2>
             <button onclick="location.reload()">ホームに戻る</button>
         </div>
     </div>

@@ -130,7 +130,7 @@ function updateUI(players) {
 }
 
 function startTimer() {
-    let timeLeft = 15;
+    let timeLeft = 30;
     document.getElementById('timer').innerText = timeLeft;
     clearInterval(timerInterval);
     timerInterval = setInterval(() => {
@@ -148,6 +148,18 @@ function selectHand(hand) {
     socket.emit('select_hand', { room_id: currentRoom, hand: hand });
     // Disable buttons
     document.querySelectorAll('.hand-list button').forEach(b => b.disabled = true);
+}
+
+async function updateValueSlowly(id, start, end, label, prefix = "") {
+    const el = document.getElementById(id);
+    const steps = 20;
+    const stepVal = (end - start) / steps;
+    for (let i = 1; i <= steps; i++) {
+        const current = Math.round(start + stepVal * i);
+        el.innerText = `${prefix}${label} ${current}`;
+        await new Promise(r => setTimeout(r, 50));
+    }
+    el.innerText = `${prefix}${label} ${end}`;
 }
 
 socket.on('battle_result', async (data) => {
@@ -172,6 +184,19 @@ socket.on('battle_result', async (data) => {
     document.getElementById('battle-hand-opp').innerText = "";
     document.getElementById('avatar-self').innerText = myAvatar;
     document.getElementById('avatar-opponent').innerText = oppAvatar;
+    document.querySelectorAll('.stamp').forEach(s => { s.className = 'stamp'; s.innerText = ''; });
+
+    // Mini Stats
+    const setMiniStats = (id, hands) => {
+        const el = document.getElementById(id);
+        el.innerHTML = `
+            <div class="mini-stat">✊ A:${hands.rock.atk} D:${hands.rock.def}</div>
+            <div class="mini-stat">✌️ A:${hands.scissors.atk} D:${hands.scissors.def}</div>
+            <div class="mini-stat">✋ A:${hands.paper.atk} D:${hands.paper.def}</div>
+        `;
+    };
+    setMiniStats('const-stats-self', myData.hands);
+    setMiniStats('const-stats-opp', oppData.hands);
 
     // 1. Roulette Animation (6 seconds)
     phaseText.innerText = "RPSルーレット！";
@@ -234,15 +259,35 @@ socket.on('battle_result', async (data) => {
     setBoardVal('board-p1-win', data.p2.win_dmg);
     setBoardVal('board-p2-win', data.p1.win_dmg);
 
-    // 4. Staged Calculation
+    // 4. Staged Calculation: Cost Drain
     phaseText.innerText = "コスト計算...";
     await new Promise(r => setTimeout(r, 1000));
+
+    const p1CostNeeded = myHandStats.atk + myHandStats.def;
+    const p2CostNeeded = oppHandStats.atk + oppHandStats.def;
+
+    await Promise.all([
+        updateValueSlowly('battle-self-stats', myData.cost, Math.max(0, myData.cost - p1CostNeeded), "COST", `${myData.username || "自分"} HP:${myData.hp} `),
+        updateValueSlowly('battle-opp-stats', oppData.cost, Math.max(0, oppData.cost - p2CostNeeded), "COST", `${oppData.username || "相手"} HP:${oppData.hp} `)
+    ]);
+
     if (myBattle.cost_dmg > 0 || oppBattle.cost_dmg > 0) {
-        document.getElementById('battle-self-stats').innerText = `${myData.username || "自分"} HP:${myData.hp - myBattle.cost_dmg} COST:0`;
-        document.getElementById('battle-opp-stats').innerText = `${oppData.username || "相手"} HP:${oppData.hp - oppBattle.cost_dmg} COST:0`;
-        await new Promise(r => setTimeout(r, 1000));
+        phaseText.innerText = "コスト不足！ダメージ発生！";
+        await new Promise(r => setTimeout(r, 500));
+
+        if (myBattle.cost_dmg > 0) {
+            await flingDmg('total-dmg-p1', myBattle.cost_dmg, 'animate-damage-p1');
+            document.body.classList.add('shake'); setTimeout(() => document.body.classList.remove('shake'), 500);
+            await updateValueSlowly('battle-self-stats', myData.hp, myData.hp - myBattle.cost_dmg, "HP", `${myData.username || "自分"} `);
+        }
+        if (oppBattle.cost_dmg > 0) {
+            await flingDmg('total-dmg-p2', oppBattle.cost_dmg, 'animate-damage-p2');
+            document.body.classList.add('shake'); setTimeout(() => document.body.classList.remove('shake'), 500);
+            await updateValueSlowly('battle-opp-stats', oppData.hp, oppData.hp - oppBattle.cost_dmg, "HP", `${oppData.username || "相手"} `);
+        }
     }
 
+    // 5. Attack Animation
     phaseText.innerText = "攻撃開始！";
     const runAttackAnim = async (attackerId, effectType) => {
         const attacker = document.getElementById(attackerId);
@@ -267,39 +312,64 @@ socket.on('battle_result', async (data) => {
         await runAttackAnim('char-opponent', effects[Math.floor(Math.random()*effects.length)]);
     }
 
-    // 5. Damage Fling
+    // 6. Damage Fling
     phaseText.innerText = "ダメージ精算！";
-    const myTotalDmg = myBattle.cost_dmg + myBattle.calc_dmg + myBattle.win_dmg;
-    const oppTotalDmg = oppBattle.cost_dmg + oppBattle.calc_dmg + oppBattle.win_dmg;
+    const myReceivedDmg = myBattle.calc_dmg + myBattle.win_dmg;
+    const oppReceivedDmg = oppBattle.calc_dmg + oppBattle.win_dmg;
 
-    const flingDmg = async (id, val, pClass) => {
-        const el = document.getElementById(id);
-        el.innerText = "-" + val;
-        el.style.opacity = 1;
-        el.className = 'total-damage-popup ' + pClass;
+    if (myReceivedDmg > 0 || oppReceivedDmg > 0) {
+        await Promise.all([
+            myReceivedDmg > 0 ? flingDmg('total-dmg-p1', myReceivedDmg, 'animate-damage-p1') : Promise.resolve(),
+            oppReceivedDmg > 0 ? flingDmg('total-dmg-p2', oppReceivedDmg, 'animate-damage-p2') : Promise.resolve()
+        ]);
+
+        document.body.classList.add('shake'); setTimeout(() => document.body.classList.remove('shake'), 500);
+
+        const myHPBefore = myData.hp - myBattle.cost_dmg;
+        const oppHPBefore = oppData.hp - oppBattle.cost_dmg;
+
+        await Promise.all([
+            updateValueSlowly('battle-self-stats', myHPBefore, myBattle.hp_after, "HP", `${myData.username || "自分"} `),
+            updateValueSlowly('battle-opp-stats', oppHPBefore, oppBattle.hp_after, "HP", `${oppData.username || "相手"} `)
+        ]);
+    }
+
+    // 7. Check Game Over for Stamps
+    if (myBattle.hp_after <= 0 || oppBattle.hp_after <= 0) {
         await new Promise(r => setTimeout(r, 1000));
-        el.style.opacity = 0;
-    };
+        const sSelf = document.getElementById('stamp-self');
+        const sOpp = document.getElementById('stamp-opponent');
 
-    await Promise.all([
-        flingDmg('total-dmg-p1', myTotalDmg, 'animate-damage-p1'),
-        flingDmg('total-dmg-p2', oppTotalDmg, 'animate-damage-p2')
-    ]);
-
-    // 6. Final HP Update
-    phaseText.innerText = "HP更新！";
-    document.getElementById('battle-self-stats').innerText = `${myData.username || "自分"} HP:${myBattle.hp_after} COST:${myBattle.cost_after}`;
-    document.getElementById('battle-opp-stats').innerText = `${oppData.username || "相手"} HP:${oppBattle.hp_after} COST:${oppBattle.cost_after}`;
+        if (myBattle.hp_after > oppBattle.hp_after) {
+            sSelf.innerText = "WIN"; sSelf.className = "stamp win animate-stamp";
+            sOpp.innerText = "LOSE"; sOpp.className = "stamp lose animate-stamp";
+        } else if (oppBattle.hp_after > myBattle.hp_after) {
+            sSelf.innerText = "LOSE"; sSelf.className = "stamp lose animate-stamp";
+            sOpp.innerText = "WIN"; sOpp.className = "stamp win animate-stamp";
+        } else {
+            sSelf.innerText = "DRAW"; sSelf.className = "stamp draw-color animate-stamp";
+            sOpp.innerText = "DRAW"; sOpp.className = "stamp draw-color animate-stamp";
+        }
+    }
 
     await new Promise(r => setTimeout(r, 2000));
-    board.classList.add('hidden');
-    phaseText.innerText = "";
+    // phaseText.innerText = ""; // Keep board and stamps visible
 });
 
+async function flingDmg(id, val, pClass) {
+    const el = document.getElementById(id);
+    el.innerText = "-" + val;
+    el.style.opacity = 1;
+    el.className = 'total-damage-popup ' + pClass;
+    await new Promise(r => setTimeout(r, 1500));
+    el.style.opacity = 0;
+}
+
 socket.on('game_over', (data) => {
+    // Game over UI is triggered after all battle animations
     setTimeout(() => {
         showScreen('game-over-screen');
         const winnerText = data.winner === mySid ? "あなたの勝利！" : (data.winner === null ? "引き分け" : "相手の勝利...");
         document.getElementById('winner-text').innerText = winnerText;
-    }, 4000);
+    }, 30000); // Wait for the long battle sequence to complete
 });
