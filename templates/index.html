@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RPS Battle Game</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+</head>
+<body>
+    <div id="game-container">
+        <!-- HOME SCREEN -->
+        <div id="home-screen" class="screen">
+            <h1>RPS BATTLE</h1>
+            <button onclick="showScreen('create-room-screen')">ルーム作成</button>
+            <button onclick="showScreen('join-room-screen')">ルーム参加</button>
+            <button onclick="showScreen('how-to-play-screen')">遊び方説明</button>
+        </div>
+
+        <!-- HOW TO PLAY -->
+        <div id="how-to-play-screen" class="screen hidden">
+            <h2>遊び方</h2>
+            <p>1. ルームを作成または参加します。</p>
+            <p>2. 各手（グー・チョキ・パー）の攻撃力と防御力を設定します。</p>
+            <p>3. コストを管理しながら相手のHPを0にすれば勝利！</p>
+            <button onclick="showScreen('home-screen')">戻る</button>
+        </div>
+
+        <!-- CREATE ROOM -->
+        <div id="create-room-screen" class="screen hidden">
+            <h2>ルーム作成</h2>
+            <input type="text" id="create-username" placeholder="ユーザー名">
+            <div id="room-code-display" class="big-text">----</div>
+            <button onclick="createRoom()">作成</button>
+            <button onclick="showScreen('home-screen')">戻る</button>
+        </div>
+
+        <!-- JOIN ROOM -->
+        <div id="join-room-screen" class="screen hidden">
+            <h2>ルーム参加</h2>
+            <input type="text" id="join-username" placeholder="ユーザー名">
+            <input type="number" id="join-room-id" placeholder="4桁の数字">
+            <button onclick="joinRoom()">参加</button>
+            <button onclick="showScreen('home-screen')">戻る</button>
+        </div>
+
+        <!-- PREP SCREEN -->
+        <div id="prep-screen" class="screen hidden">
+            <h2>準備画面</h2>
+            <div class="prep-controls">
+                <div class="hand-config" id="config-rock" data-hand="rock">
+                    <div class="hand-icon">✊</div>
+                    <div class="hand-stats-container">
+                        <div class="stat-label-row">攻撃 <div class="stat-squares atk-squares" data-max="10"></div></div>
+                        <div class="stat-label-row">防御 <div class="stat-squares def-squares" data-max="5"></div></div>
+                    </div>
+                </div>
+                <div class="hand-config" id="config-scissors" data-hand="scissors">
+                    <div class="hand-icon">✌️</div>
+                    <div class="hand-stats-container">
+                        <div class="stat-label-row">攻撃 <div class="stat-squares atk-squares" data-max="10"></div></div>
+                        <div class="stat-label-row">防御 <div class="stat-squares def-squares" data-max="5"></div></div>
+                    </div>
+                </div>
+                <div class="hand-config" id="config-paper" data-hand="paper">
+                    <div class="hand-icon">✋</div>
+                    <div class="hand-stats-container">
+                        <div class="stat-label-row">攻撃 <div class="stat-squares atk-squares" data-max="10"></div></div>
+                        <div class="stat-label-row">防御 <div class="stat-squares def-squares" data-max="5"></div></div>
+                    </div>
+                </div>
+            </div>
+            <p>コストは攻撃＋防御の合計です。</p>
+            <button onclick="submitPrep()">準備完了</button>
+        </div>
+
+        <!-- SELECTION SCREEN -->
+        <div id="selection-screen" class="screen hidden">
+            <div class="battle-layout">
+                <div class="player-info" id="my-info">
+                    <h3 class="username">自分</h3>
+                    <div class="hp-bar-container"><div class="hp-bar"></div></div>
+                    <div class="hp-text">HP: 10/10</div>
+                    <div class="cost-text">残りコスト: 10</div>
+                    <div class="hand-list">
+                        <button onclick="selectHand('rock')" id="btn-rock">グー</button>
+                        <button onclick="selectHand('scissors')" id="btn-scissors">チョキ</button>
+                        <button onclick="selectHand('paper')" id="btn-paper">パー</button>
+                    </div>
+                </div>
+                <div class="timer-container">
+                    <div id="timer">15</div>
+                </div>
+                <div class="player-info" id="opponent-info">
+                    <h3 class="username">相手</h3>
+                    <div class="hp-bar-container"><div class="hp-bar"></div></div>
+                    <div class="hp-text">HP: 10/10</div>
+                    <div class="cost-text">残りコスト: 10</div>
+                    <div class="opponent-hand-stats">
+                        <div id="opp-stat-rock">✊ ATK:? DEF:?</div>
+                        <div id="opp-stat-scissors">✌️ ATK:? DEF:?</div>
+                        <div id="opp-stat-paper">✋ ATK:? DEF:?</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- BATTLE SCREEN -->
+        <div id="battle-screen" class="screen hidden">
+            <div id="battle-stats-overlay">
+                <div id="battle-self-stats" class="battle-stat-box">HP:? COST:?</div>
+                <div id="battle-opp-stats" class="battle-stat-box">HP:? COST:?</div>
+            </div>
+
+            <div id="battle-result-board" class="hidden">
+                <div class="board-row">
+                    <div id="board-p1-winloss" class="winloss-text"></div>
+                    <div class="board-label">WIN/LOSS</div>
+                    <div id="board-p2-winloss" class="winloss-text"></div>
+                </div>
+                <div class="board-row">
+                    <div id="board-p1-cost" class="damage-val"></div>
+                    <div class="board-label">COST DAMAGE</div>
+                    <div id="board-p2-cost" class="damage-val"></div>
+                </div>
+                <div class="board-row">
+                    <div id="board-p1-calc" class="damage-val"></div>
+                    <div class="board-label">CALC DAMAGE</div>
+                    <div id="board-p2-calc" class="damage-val"></div>
+                </div>
+                <div class="board-row">
+                    <div id="board-p1-win" class="damage-val"></div>
+                    <div class="board-label">WIN DAMAGE</div>
+                    <div id="board-p2-win" class="damage-val"></div>
+                </div>
+            </div>
+
+            <div class="arena">
+                <div id="char-self" class="character">
+                    <div id="stamp-self" class="stamp"></div>
+                    <div class="username">自分</div>
+                    <div class="char-avatar" id="avatar-self"></div>
+                    <div class="char-body"></div>
+                    <div class="roulette-container" id="roulette-self">
+                        <div class="roulette-reel">✊✌️✋</div>
+                    </div>
+                    <div class="constant-hand-stats" id="const-stats-self">
+                        <div class="mini-stat">✊ A:? D:?</div>
+                        <div class="mini-stat">✌️ A:? D:?</div>
+                        <div class="mini-stat">✋ A:? D:?</div>
+                    </div>
+                    <div class="battle-hand-stats" id="battle-hand-self"></div>
+                    <div id="total-dmg-p1" class="total-damage-popup"></div>
+                </div>
+                <div id="char-opponent" class="character">
+                    <div id="stamp-opponent" class="stamp"></div>
+                    <div class="username">相手</div>
+                    <div class="char-avatar" id="avatar-opponent"></div>
+                    <div class="char-body"></div>
+                    <div class="roulette-container" id="roulette-opp">
+                        <div class="roulette-reel">✊✌️✋</div>
+                    </div>
+                    <div class="constant-hand-stats" id="const-stats-opp">
+                        <div class="mini-stat">✊ A:? D:?</div>
+                        <div class="mini-stat">✌️ A:? D:?</div>
+                        <div class="mini-stat">✋ A:? D:?</div>
+                    </div>
+                    <div class="battle-hand-stats" id="battle-hand-opp"></div>
+                    <div id="total-dmg-p2" class="total-damage-popup"></div>
+                </div>
+            </div>
+
+            <!-- Visual Effect Layers -->
+            <div id="effect-layer"></div>
+            <div id="cut-in-layer"></div>
+            <div id="flash-layer" class="fullscreen-flash"></div>
+            <div id="ko-layer" class="ko-screen"><div class="ko-text">FINISH!</div></div>
+
+            <div id="battle-phase-text"></div>
+            <div id="battle-log"></div>
+        </div>
+
+        <!-- GAME OVER SCREEN -->
+        <div id="game-over-screen" class="screen hidden">
+            <h2 id="winner-text" class="big-text"></h2>
+            <button onclick="location.reload()">ホームに戻る</button>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/game.js') }}"></script>
+</body>
+</html>
