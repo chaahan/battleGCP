@@ -33,14 +33,17 @@ def index():
 @socketio.on('create_room')
 def on_create_room(data):
     username = data.get('username')
+    avatar = data.get('avatar', '👤')
     room_id = str(random.randint(1000, 9999))
     while room_id in rooms:
         room_id = str(random.randint(1000, 9999))
 
     rooms[room_id] = {
+        'host_sid': request.sid,
         'players': {
             request.sid: {
                 'username': username,
+                'avatar': avatar,
                 'hp': 10,
                 'cost': 10,
                 'hands': {},
@@ -57,11 +60,13 @@ def on_create_room(data):
 @socketio.on('join_room')
 def on_join_room(data):
     username = data.get('username')
+    avatar = data.get('avatar', '👤')
     room_id = data.get('room_id')
 
     if room_id in rooms and len(rooms[room_id]['players']) < 2:
         rooms[room_id]['players'][request.sid] = {
             'username': username,
+            'avatar': avatar,
             'hp': 10,
             'cost': 10,
             'hands': {},
@@ -101,11 +106,12 @@ def on_submit_prep(data):
             for sid, p in rooms[room_id]['players'].items():
                 players_info[sid] = {
                     'username': p['username'],
+                    'avatar': p['avatar'],
                     'hp': p['hp'],
                     'cost': p['cost'],
                     'hands': p['hands']
                 }
-            emit('start_selection', {'players': players_info}, room=room_id)
+            emit('start_selection', {'players': players_info, 'host_sid': rooms[room_id]['host_sid']}, room=room_id)
 
 @socketio.on('select_hand')
 def on_select_hand(data):
@@ -134,8 +140,20 @@ def process_battle(room_id):
     p2 = room['players'][p2_sid]
 
     # Store initial state for UI animation
-    p1_initial = {'hp': p1['hp'], 'cost': p1['cost'], 'hands': p1['hands']}
-    p2_initial = {'hp': p2['hp'], 'cost': p2['cost'], 'hands': p2['hands']}
+    p1_initial = {
+        'username': p1['username'],
+        'avatar': p1['avatar'],
+        'hp': p1['hp'],
+        'cost': p1['cost'],
+        'hands': p1['hands']
+    }
+    p2_initial = {
+        'username': p2['username'],
+        'avatar': p2['avatar'],
+        'hp': p2['hp'],
+        'cost': p2['cost'],
+        'hands': p2['hands']
+    }
 
     hand_map = {'rock': 0, 'scissors': 1, 'paper': 2}
     h1_name = p1['selected_hand']
@@ -173,6 +191,7 @@ def process_battle(room_id):
     elif res['winner'] == 2: result_str = "p2_win"
 
     battle_data = {
+        'host_sid': room['host_sid'],
         'p1': {
             'sid': p1_sid,
             'hand': h1_name,
@@ -223,11 +242,12 @@ def process_battle(room_id):
             for sid, p in rooms[room_id]['players'].items():
                 players_info[sid] = {
                     'username': p['username'],
+                    'avatar': p['avatar'],
                     'hp': p['hp'],
                     'cost': p['cost'],
                     'hands': p['hands']
                 }
-            emit('start_selection', {'players': players_info}, room=room_id)
+            emit('start_selection', {'players': players_info, 'host_sid': rooms[room_id]['host_sid']}, room=room_id)
 
 if __name__ == '__main__':
     import os
